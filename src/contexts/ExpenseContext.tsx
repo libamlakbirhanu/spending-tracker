@@ -1,19 +1,30 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { SpendingContextType, Expense } from "../types";
-import { useAuth } from "./AuthContext";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "./AuthContext";
+import { Expense } from "../types";
 import toast from "react-hot-toast";
 
-const SpendingContext = createContext<SpendingContextType | undefined>(
-  undefined
-);
+interface ExpenseContextType {
+  expenses: Expense[];
+  dailyTotal: number;
+  remainingBudget: number;
+  addExpense: (
+    amount: number,
+    description: string,
+    category: string
+  ) => Promise<void>;
+  getExpensesByCategory: () => { [key: string]: number };
+  loading: boolean;
+}
 
-export const SpendingProvider: React.FC<{ children: React.ReactNode }> = ({
+const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
+
+export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user, userSettings } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, userSettings } = useAuth();
 
   const fetchExpenses = async () => {
     try {
@@ -53,16 +64,11 @@ export const SpendingProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user]);
 
-  const dailyTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const remainingBudget = user
-    ? (userSettings?.daily_limit || 0) - dailyTotal
-    : 0;
-
   const addExpense = async (
     amount: number,
     description: string,
     category: string
-  ): Promise<void> => {
+  ) => {
     if (!user) return;
 
     try {
@@ -71,7 +77,7 @@ export const SpendingProvider: React.FC<{ children: React.ReactNode }> = ({
           user_id: user.id,
           amount,
           description,
-          category,
+          category_id: category,
         },
       ]);
 
@@ -88,6 +94,11 @@ export const SpendingProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const dailyTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const remainingBudget = userSettings
+    ? userSettings.daily_limit - dailyTotal
+    : 0;
+
   const getExpensesByCategory = () => {
     return expenses.reduce((acc, expense) => {
       acc[expense.category_id] =
@@ -97,7 +108,7 @@ export const SpendingProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <SpendingContext.Provider
+    <ExpenseContext.Provider
       value={{
         expenses,
         dailyTotal,
@@ -108,14 +119,14 @@ export const SpendingProvider: React.FC<{ children: React.ReactNode }> = ({
       }}
     >
       {children}
-    </SpendingContext.Provider>
+    </ExpenseContext.Provider>
   );
 };
 
-export const useSpending = () => {
-  const context = useContext(SpendingContext);
+export const useExpenses = () => {
+  const context = useContext(ExpenseContext);
   if (context === undefined) {
-    throw new Error("useSpending must be used within a SpendingProvider");
+    throw new Error("useExpenses must be used within an ExpenseProvider");
   }
   return context;
 };

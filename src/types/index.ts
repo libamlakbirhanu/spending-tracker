@@ -9,7 +9,7 @@ export interface Expense {
   id: string;
   amount: number;
   description: string;
-  timestamp: number;
+  created_at: number;
   category: string;
 }
 
@@ -29,12 +29,12 @@ export interface SpendingContextType {
 }
 
 export const EXPENSE_CATEGORIES = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Bills & Utilities',
-  'Other'
+  "Food & Dining",
+  "Transportation",
+  "Shopping",
+  "Entertainment",
+  "Bills & Utilities",
+  "Other",
 ] as const;
 
-export type ExpenseCategory = typeof EXPENSE_CATEGORIES[number];
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];

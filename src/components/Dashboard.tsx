@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useExpenses } from "../contexts/ExpenseContext";
 import ExpenseForm from "./ExpenseForm";
 import SpendingChart from "./SpendingChart";
+import WeeklySpendingChart from "./WeeklySpendingChart";
 import ExpenseList from "./ExpenseList";
 
 export const Dashboard: React.FC = () => {
@@ -15,7 +16,7 @@ export const Dashboard: React.FC = () => {
     remainingBudget,
     addExpense,
     getExpensesByCategory,
-    loading,
+    weeklyExpenses,
   } = useExpenses();
 
   const handleAddExpense = async (
@@ -26,14 +27,14 @@ export const Dashboard: React.FC = () => {
     await addExpense(amount, description, category);
     setShowExpenseForm(false);
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+  // Remove loading spinner since we handle loading at the route level
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+  //     </div>
+  //   );
+  // }
 
   const getProgressColor = (percentage: number) => {
     if (percentage >= 90) return "bg-red-500";
@@ -138,7 +139,17 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Spending Chart */}
+        {/* Weekly Spending Chart */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Last 7 Days Spending
+          </h2>
+          <WeeklySpendingChart weeklyExpenses={weeklyExpenses} />
+        </div>
+      </div>
+
+      {/* Category Spending Chart */}
+      <div className="mt-6">
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Spending by Category

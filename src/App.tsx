@@ -4,7 +4,6 @@ import { Dashboard } from "./components/Dashboard";
 import SpendingAnalytics from "./components/SpendingAnalytics";
 import Login from "./components/Login";
 import SignUp from "./components/SignUp";
-import { AuthProvider } from "./contexts/AuthContext";
 import { ExpenseProvider } from "./contexts/ExpenseContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
 import PrivateRoute from "./components/PrivateRoute";
@@ -14,14 +13,12 @@ import { AuthLayout } from "./components/AuthLayout";
 
 function App() {
   return (
-    <AuthProvider>
-      <ExpenseProvider>
-        <CategoryProvider>
-          <AppContent />
-          <Toaster position="top-right" />
-        </CategoryProvider>
-      </ExpenseProvider>
-    </AuthProvider>
+    <ExpenseProvider>
+      <CategoryProvider>
+        <AppContent />
+        <Toaster position="top-right" />
+      </CategoryProvider>
+    </ExpenseProvider>
   );
 }
 

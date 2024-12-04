@@ -31,6 +31,7 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
+      console.log("Fetching categories...");
       const { data, error: fetchError } = await supabase
         .from("categories")
         .select("*")
@@ -38,8 +39,10 @@ export function CategoryProvider({ children }: { children: React.ReactNode }) {
 
       if (fetchError) throw fetchError;
 
+      console.log("Categories fetched:", data);
       setCategories(data || []);
     } catch (err) {
+      console.error("Error fetching categories:", err);
       setError(
         err instanceof Error ? err.message : "Failed to fetch categories"
       );

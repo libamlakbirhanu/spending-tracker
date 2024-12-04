@@ -18,6 +18,7 @@ interface ExpenseContextType {
   totalSpent: number;
   weeklyExpenses: { date: string; amount: number }[];
   getHistoricalExpensesByCategory: () => Promise<{ [key: string]: number }>;
+  historicalExpenses: { [key: string]: number };
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
@@ -31,6 +32,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     { date: string; amount: number }[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [historicalExpenses, setHistoricalExpenses] = useState<{ [key: string]: number }>({});
   const { user, userSettings } = useAuth();
 
   const fetchExpenses = async () => {
@@ -198,8 +200,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const totals = data.reduce((acc: { [key: string]: number }, expense) => {
         if (expense.category_id) {
-          acc[expense.category_id] =
-            (acc[expense.category_id] || 0) + expense.amount;
+          acc[expense.category_id] = (acc[expense.category_id] || 0) + expense.amount;
         } else {
           // Add to "Uncategorized" if no category
           acc["uncategorized"] = (acc["uncategorized"] || 0) + expense.amount;
@@ -208,6 +209,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
       }, {});
 
       console.log("Processed category totals:", totals);
+      setHistoricalExpenses(totals);
       return totals;
     } catch (error) {
       console.error("Failed to load historical expenses:", error);
@@ -260,6 +262,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
         totalSpent,
         weeklyExpenses,
         getHistoricalExpensesByCategory,
+        historicalExpenses,
       }}
     >
       {children}

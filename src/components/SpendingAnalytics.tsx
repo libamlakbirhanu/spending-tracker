@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useExpenses } from "../contexts/ExpenseContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useCategories } from "../contexts/CategoryContext";
+import { useExpenses } from "../contexts/ExpenseContext";
 import ReactApexChart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import WeeklySpendingChart from "./WeeklySpendingChart";
+import SmartInsights from "./SmartInsights"; 
 import {
   FaChartLine,
   FaCalendarAlt,
@@ -15,11 +16,16 @@ import {
 
 const SpendingAnalytics: React.FC = () => {
   const { userSettings } = useAuth();
-  const { weeklyExpenses, getHistoricalExpensesByCategory } = useExpenses();
   const { categories } = useCategories();
-  const [historicalExpenses, setHistoricalExpenses] = useState<{
-    [key: string]: number;
-  }>({});
+  const { getHistoricalExpensesByCategory, historicalExpenses, weeklyExpenses } = useExpenses();
+
+  useEffect(() => {
+    const loadHistoricalData = async () => {
+      await getHistoricalExpensesByCategory();
+    };
+    loadHistoricalData();
+  }, []);
+
   const [totalStats, setTotalStats] = useState({
     totalSpent: 0,
     avgPerDay: 0,
@@ -27,14 +33,6 @@ const SpendingAnalytics: React.FC = () => {
     lowestDay: { date: "", amount: Infinity },
     monthlyProjection: 0,
   });
-
-  useEffect(() => {
-    const loadHistoricalData = async () => {
-      const data = await getHistoricalExpensesByCategory();
-      setHistoricalExpenses(data);
-    };
-    loadHistoricalData();
-  }, [getHistoricalExpensesByCategory]);
 
   useEffect(() => {
     if (weeklyExpenses.length > 0) {
@@ -66,6 +64,23 @@ const SpendingAnalytics: React.FC = () => {
       });
     }
   }, [weeklyExpenses]);
+
+  console.log("Historical Expenses:", historicalExpenses);
+  console.log("Categories:", categories);
+
+  // Process category data
+  const categoryData = Object.entries(historicalExpenses)
+    .map(([id, amount]) => {
+      const category = categories.find((c) => c.id === id);
+      console.log("Processing category:", id, category, amount);
+      return {
+        category: category?.name || (id === "uncategorized" ? "Uncategorized" : "Other"),
+        amount: amount
+      };
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  console.log("Processed category data:", categoryData);
 
   const categoryChartOptions: ApexOptions = {
     chart: {
@@ -116,21 +131,6 @@ const SpendingAnalytics: React.FC = () => {
       "#EC4899",
     ].sort(() => Math.random() - 0.5),
   };
-
-  // Process category data
-  const categoryData = Object.entries(historicalExpenses)
-    .map(([id, amount]) => {
-      const category = categories.find((c) => c.id === id);
-      return {
-        category:
-          category?.name ||
-          (id === "uncategorized" ? "Uncategorized" : "Other"),
-        amount: amount,
-      };
-    })
-    .sort((a, b) => b.amount - a.amount); // Sort by amount in descending order
-
-  console.log("Processed category data:", categoryData);
 
   const chartSeries = [
     {
@@ -268,12 +268,12 @@ const SpendingAnalytics: React.FC = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-6">
         {/* Weekly Spending Trends */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Last 7 Days Spending
-          </h2>
-          <div className="h-[300px]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
             <WeeklySpendingChart weeklyExpenses={weeklyExpenses} />
+          </div>
+          <div className="lg:col-span-1">
+            <SmartInsights />
           </div>
         </div>
 

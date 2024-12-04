@@ -6,6 +6,7 @@ import Login from "./components/Login";
 import SignUp from "./components/SignUp";
 import { ExpenseProvider } from "./contexts/ExpenseContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
+import { InsightsProvider } from "./contexts/InsightsContext";
 import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./contexts/AuthContext";
 import { ExpenseDetail } from "./components/ExpenseDetail";
@@ -15,8 +16,10 @@ function App() {
   return (
     <ExpenseProvider>
       <CategoryProvider>
-        <AppContent />
-        <Toaster position="top-right" />
+        <InsightsProvider>
+          <AppContent />
+          <Toaster position="top-right" />
+        </InsightsProvider>
       </CategoryProvider>
     </ExpenseProvider>
   );

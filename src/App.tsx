@@ -11,6 +11,9 @@ import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./contexts/AuthContext";
 import { ExpenseDetail } from "./components/ExpenseDetail";
 import { AuthLayout } from "./components/AuthLayout";
+import Goals from "./components/Goals";
+import { GoalsProvider } from "./contexts/GoalsContext";
+import GoalDetails from "./components/GoalDetails";
 
 function App() {
   return (
@@ -70,6 +73,32 @@ function AppContent() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/goals"
+        element={
+          <PrivateRoute>
+            <AuthLayout>
+              <GoalsProvider>
+                <Goals />
+              </GoalsProvider>
+            </AuthLayout>
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/goals/:goalId"
+        element={
+          <PrivateRoute>
+            <AuthLayout>
+              <GoalsProvider>
+                <GoalDetails />
+              </GoalsProvider>
+            </AuthLayout>
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/expense/:id"
         element={

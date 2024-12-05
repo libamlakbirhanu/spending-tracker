@@ -32,7 +32,7 @@ export const InsightsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
-  const { expenses } = useExpenses();
+  const { monthlyExpenses, allTimeExpenses } = useExpenses();
   const { categories } = useCategories();
   const [insights, setInsights] = useState<SpendingInsight[]>([]);
   const [categoryTrends, setCategoryTrends] = useState<CategoryTrend[]>([]);
@@ -209,17 +209,17 @@ export const InsightsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    if (!user || !expenses.length) {
+    if (!user || !allTimeExpenses.length) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const trends = analyzeCategoryTrends(expenses);
-    const patterns = analyzeSpendingPatterns(expenses);
-    generateInsights(expenses, trends, patterns);
+    const trends = analyzeCategoryTrends(monthlyExpenses);
+    const patterns = analyzeSpendingPatterns(allTimeExpenses);
+    generateInsights(allTimeExpenses, trends, patterns);
     setLoading(false);
-  }, [user, expenses, categories]);
+  }, [user, allTimeExpenses, categories]);
 
   return (
     <InsightsContext.Provider

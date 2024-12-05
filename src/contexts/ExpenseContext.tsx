@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 
 interface ExpenseContextType {
   expenses: Expense[];
+  monthlyExpenses: Expense[];
+  allTimeExpenses: Expense[];
   dailyTotal: number;
   remainingBudget: number;
   addExpense: (
@@ -27,12 +29,16 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [monthlyExpenses, setMonthlyExpenses] = useState<Expense[]>([]);
+  const [allTimeExpenses, setAllTimeExpenses] = useState<Expense[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [weeklyExpenses, setWeeklyExpenses] = useState<
     { date: string; amount: number }[]
   >([]);
   const [loading, setLoading] = useState(false);
-  const [historicalExpenses, setHistoricalExpenses] = useState<{ [key: string]: number }>({});
+  const [historicalExpenses, setHistoricalExpenses] = useState<{
+    [key: string]: number;
+  }>({});
   const { user, userSettings } = useAuth();
 
   const fetchExpenses = async () => {
@@ -43,10 +49,13 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     try {
-      console.log("Fetching expenses for user:", user.id);
       setLoading(true);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      oneMonthAgo.setHours(0, 0, 0, 0);
 
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -63,12 +72,21 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
         .gte("created_at", today.toISOString())
         .lt("created_at", tomorrow.toISOString())
         .order("created_at", { ascending: false });
+      const { data: monthlyData, error: monthlyError } = await supabase
+        .from("expenses")
+        .select("*, category_id")
+        .eq("user_id", user.id)
+        .gte("created_at", oneMonthAgo.toISOString())
+        .lt("created_at", today.toISOString())
+        .order("created_at", { ascending: false });
 
-      if (error || dailyError) {
+      if (error || dailyError || monthlyError) {
         throw error;
       }
 
       setExpenses(dailyData || []);
+      setAllTimeExpenses(data || []);
+      setMonthlyExpenses(monthlyData || []);
       const total = (data || []).reduce(
         (sum, expense) => sum + expense.amount,
         0
@@ -86,12 +104,10 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!user) return;
 
     try {
-      console.log("Fetching weekly expenses...");
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 6); // Change to -6 to include today
       lastWeek.setHours(0, 0, 0, 0);
 
-      console.log("Fetching expenses from:", lastWeek.toISOString());
       const { data: weeklyData, error: weeklyError } = await supabase
         .from("expenses")
         .select("amount, created_at")
@@ -100,8 +116,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
         .order("created_at", { ascending: true });
 
       if (weeklyError) throw weeklyError;
-
-      console.log("Weekly data received:", weeklyData);
 
       // Create a map for all days in the last week, initialized with 0
       const dailyTotals: { [key: string]: number } = {};
@@ -126,7 +140,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       );
 
-      console.log("Processed weekly totals:", weeklyTotals);
       setWeeklyExpenses(weeklyTotals);
     } catch (error) {
       console.error("Failed to fetch weekly expenses:", error);
@@ -165,9 +178,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     : 0;
 
   const getExpensesByCategory = () => {
-    console.log("Getting expenses by category...");
-    console.log("Current expenses:", expenses);
-
     const categoryTotals = expenses.reduce((acc, expense) => {
       const categoryId = expense.category_id;
       if (!categoryId) {
@@ -178,7 +188,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
       return acc;
     }, {} as { [key: string]: number });
 
-    console.log("Category totals:", categoryTotals);
     return categoryTotals;
   };
 
@@ -186,7 +195,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!user) return {};
 
     try {
-      console.log("Fetching historical expenses by category...");
       const { data, error } = await supabase
         .from("expenses")
         .select("amount, category_id")
@@ -196,11 +204,10 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
         throw error;
       }
 
-      console.log("Historical expense data:", data);
-
       const totals = data.reduce((acc: { [key: string]: number }, expense) => {
         if (expense.category_id) {
-          acc[expense.category_id] = (acc[expense.category_id] || 0) + expense.amount;
+          acc[expense.category_id] =
+            (acc[expense.category_id] || 0) + expense.amount;
         } else {
           // Add to "Uncategorized" if no category
           acc["uncategorized"] = (acc["uncategorized"] || 0) + expense.amount;
@@ -208,7 +215,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
         return acc;
       }, {});
 
-      console.log("Processed category totals:", totals);
       setHistoricalExpenses(totals);
       return totals;
     } catch (error) {
@@ -220,10 +226,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     let mounted = true;
-    console.log("ExpenseContext: User or settings changed", {
-      userId: user?.id,
-      hasSettings: !!userSettings,
-    });
 
     if (user && userSettings) {
       (async () => {
@@ -254,6 +256,8 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     <ExpenseContext.Provider
       value={{
         expenses,
+        monthlyExpenses,
+        allTimeExpenses,
         dailyTotal,
         remainingBudget,
         addExpense,

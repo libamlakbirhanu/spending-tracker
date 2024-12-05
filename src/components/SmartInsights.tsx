@@ -1,7 +1,12 @@
-import React from 'react';
-import { useInsights } from '../contexts/InsightsContext';
-import { FaLightbulb, FaChartLine, FaTrophy, FaExclamationTriangle } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import React from "react";
+import { useInsights } from "../contexts/InsightsContext";
+import {
+  FaLightbulb,
+  FaChartLine,
+  FaTrophy,
+  FaExclamationTriangle,
+} from "react-icons/fa";
+import { motion } from "framer-motion";
 
 const SmartInsights: React.FC = () => {
   const { insights, loading } = useInsights();
@@ -21,11 +26,11 @@ const SmartInsights: React.FC = () => {
 
   const getInsightIcon = (type: string) => {
     switch (type) {
-      case 'warning':
+      case "warning":
         return <FaExclamationTriangle className="text-yellow-500" />;
-      case 'trend':
+      case "trend":
         return <FaChartLine className="text-blue-500" />;
-      case 'achievement':
+      case "achievement":
         return <FaTrophy className="text-green-500" />;
       default:
         return <FaLightbulb className="text-purple-500" />;
@@ -34,19 +39,19 @@ const SmartInsights: React.FC = () => {
 
   const getInsightColor = (type: string) => {
     switch (type) {
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-100';
-      case 'trend':
-        return 'bg-blue-50 border-blue-100';
-      case 'achievement':
-        return 'bg-green-50 border-green-100';
+      case "warning":
+        return "bg-yellow-50 border-yellow-100";
+      case "trend":
+        return "bg-blue-50 border-blue-100";
+      case "achievement":
+        return "bg-green-50 border-green-100";
       default:
-        return 'bg-purple-50 border-purple-100';
+        return "bg-purple-50 border-purple-100";
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-white rounded-xl shadow-sm p-6 max-h-[350px] overflow-y-auto">
       <div className="flex items-center space-x-2 mb-6">
         <FaLightbulb className="text-purple-500 text-xl" />
         <h2 className="text-lg font-semibold text-gray-900">Smart Insights</h2>
@@ -77,7 +82,9 @@ const SmartInsights: React.FC = () => {
                     <h3 className="font-medium text-gray-900 mb-1">
                       {insight.title}
                     </h3>
-                    <p className="text-sm text-gray-600">{insight.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {insight.description}
+                    </p>
                     {insight.metadata?.percentageChange && (
                       <div className="mt-2 text-sm font-medium">
                         {insight.metadata.percentageChange > 0 ? (
@@ -86,7 +93,11 @@ const SmartInsights: React.FC = () => {
                           </span>
                         ) : (
                           <span className="text-green-500">
-                            ↓ {Math.abs(insight.metadata.percentageChange).toFixed(1)}%
+                            ↓{" "}
+                            {Math.abs(
+                              insight.metadata.percentageChange
+                            ).toFixed(1)}
+                            %
                           </span>
                         )}
                       </div>

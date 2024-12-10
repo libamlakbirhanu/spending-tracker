@@ -13,7 +13,9 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ expenses }) => {
   console.log("SpendingChart - Expenses:", expenses);
 
   // Filter out categories with 0 amount
-  const nonZeroExpenses = Object.entries(expenses).filter(([_, amount]) => amount > 0);
+  const nonZeroExpenses = Object.entries(expenses).filter(
+    ([_, amount]) => amount > 0
+  );
 
   // If no expenses, show a message
   if (nonZeroExpenses.length === 0) {
@@ -43,17 +45,17 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ expenses }) => {
       type: "pie" as const,
       animations: {
         enabled: true,
-        easing: 'easeinout',
+        easing: "easeinout",
         speed: 800,
         animateGradually: {
           enabled: true,
-          delay: 150
+          delay: 150,
         },
         dynamicAnimation: {
           enabled: true,
-          speed: 350
-        }
-      }
+          speed: 350,
+        },
+      },
     },
     labels: chartData.map((item) => item.category),
     colors: chartData.map((item) => item.color),
@@ -61,21 +63,21 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ expenses }) => {
       position: "bottom" as const,
       horizontalAlign: "center" as const,
       floating: false,
-      fontSize: '14px',
-      offsetY: 7
+      fontSize: "14px",
+      offsetY: 7,
     },
     dataLabels: {
       enabled: true,
-      formatter: function(val: number, opts: any) {
+      formatter: function (val: number, opts: any) {
         return `$${opts.w.config.series[opts.seriesIndex].toFixed(2)}`;
-      }
+      },
     },
     tooltip: {
       y: {
-        formatter: function(val: number) {
+        formatter: function (val: number) {
           return `$${val.toFixed(2)}`;
-        }
-      }
+        },
+      },
     },
     responsive: [
       {

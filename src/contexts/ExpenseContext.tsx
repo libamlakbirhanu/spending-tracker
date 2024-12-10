@@ -1,13 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import React, { createContext, useContext, useMemo } from "react";
 import { useAuth } from "./AuthContext";
-import { Expense } from "../types";
+import { Expense } from "../types/expense";
+import {
+  useExpenseQuery,
+  useAddExpense,
+  useExpenseStats,
+  useWeeklyExpenses,
+  useCategoryExpenses,
+} from "../hooks/useExpenses";
 import toast from "react-hot-toast";
 
 interface ExpenseContextType {
   expenses: Expense[];
   monthlyExpenses: Expense[];
-  allTimeExpenses: Expense[];
+  recentExpenses: Expense[];
   dailyTotal: number;
   remainingBudget: number;
   addExpense: (
@@ -15,10 +21,10 @@ interface ExpenseContextType {
     description: string,
     category: string
   ) => Promise<void>;
-  getExpensesByCategory: () => { [key: string]: number };
   loading: boolean;
   totalSpent: number;
   weeklyExpenses: { date: string; amount: number }[];
+  getExpensesByCategory: () => { [key: string]: number };
   getHistoricalExpensesByCategory: () => Promise<{ [key: string]: number }>;
   historicalExpenses: { [key: string]: number };
 }
@@ -28,245 +34,84 @@ const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [monthlyExpenses, setMonthlyExpenses] = useState<Expense[]>([]);
-  const [allTimeExpenses, setAllTimeExpenses] = useState<Expense[]>([]);
-  const [totalSpent, setTotalSpent] = useState(0);
-  const [weeklyExpenses, setWeeklyExpenses] = useState<
-    { date: string; amount: number }[]
-  >([]);
-  const [loading, setLoading] = useState(false);
-  const [historicalExpenses, setHistoricalExpenses] = useState<{
-    [key: string]: number;
-  }>({});
-  const { user, userSettings } = useAuth();
+  const { userSettings } = useAuth();
 
-  const fetchExpenses = async () => {
-    if (!user) {
-      console.log("No user, skipping expense fetch");
-      setExpenses([]);
-      return;
-    }
+  // Fetch expenses for different time windows
+  const {
+    data: dailyData = { data: [], count: 0 },
+    isLoading: isDailyLoading,
+  } = useExpenseQuery("daily");
 
-    try {
-      setLoading(true);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+  const {
+    data: monthlyData = { data: [], count: 0 },
+    isLoading: isMonthlyLoading,
+  } = useExpenseQuery("monthly");
 
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      oneMonthAgo.setHours(0, 0, 0, 0);
+  const {
+    data: recentData = { data: [], count: 0 },
+    isLoading: isRecentLoading,
+  } = useExpenseQuery("recent");
 
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+  const addExpenseMutation = useAddExpense();
 
-      const { data, error } = await supabase
-        .from("expenses")
-        .select("*, category_id")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      const { data: dailyData, error: dailyError } = await supabase
-        .from("expenses")
-        .select("*, category_id")
-        .eq("user_id", user.id)
-        .gte("created_at", today.toISOString())
-        .lt("created_at", tomorrow.toISOString())
-        .order("created_at", { ascending: false });
-      const { data: monthlyData, error: monthlyError } = await supabase
-        .from("expenses")
-        .select("*, category_id")
-        .eq("user_id", user.id)
-        .gte("created_at", oneMonthAgo.toISOString())
-        .lt("created_at", today.toISOString())
-        .order("created_at", { ascending: false });
+  // Calculate derived states using memoized hooks
+  const stats = useExpenseStats(monthlyData.data);
+  const weeklyExpenses = useWeeklyExpenses(monthlyData.data);
+  const categoryExpenses = useCategoryExpenses(dailyData.data);
+  const historicalCategoryExpenses = useCategoryExpenses(monthlyData.data);
 
-      if (error || dailyError || monthlyError) {
-        throw error;
-      }
+  // Calculate daily total and remaining budget
+  const dailyTotal = useMemo(() => {
+    return dailyData.data.reduce((sum, expense) => sum + expense.amount, 0);
+  }, [dailyData.data]);
 
-      setExpenses(dailyData || []);
-      setAllTimeExpenses(data || []);
-      setMonthlyExpenses(monthlyData || []);
-      const total = (data || []).reduce(
-        (sum, expense) => sum + expense.amount,
-        0
-      );
-      setTotalSpent(total);
-    } catch (error) {
-      console.error("Failed to fetch expenses:", error);
-      toast.error("Failed to load expenses");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const remainingBudget = useMemo(() => {
+    if (!userSettings?.daily_limit) return 0;
+    const limit = userSettings.daily_limit;
+    return Math.max(0, limit - dailyTotal);
+  }, [userSettings?.daily_limit, dailyTotal]);
 
-  const fetchWeeklyExpenses = async () => {
-    if (!user) return;
-
-    try {
-      const lastWeek = new Date();
-      lastWeek.setDate(lastWeek.getDate() - 6); // Change to -6 to include today
-      lastWeek.setHours(0, 0, 0, 0);
-
-      const { data: weeklyData, error: weeklyError } = await supabase
-        .from("expenses")
-        .select("amount, created_at")
-        .eq("user_id", user.id)
-        .gte("created_at", lastWeek.toISOString())
-        .order("created_at", { ascending: true });
-
-      if (weeklyError) throw weeklyError;
-
-      // Create a map for all days in the last week, initialized with 0
-      const dailyTotals: { [key: string]: number } = {};
-      for (let i = 0; i <= 6; i++) {
-        const date = new Date(lastWeek);
-        date.setDate(date.getDate() + i);
-        const dateStr = date.toISOString().split("T")[0];
-        dailyTotals[dateStr] = 0;
-      }
-
-      // Add the actual expenses
-      weeklyData.forEach((exp) => {
-        const date = new Date(exp.created_at).toISOString().split("T")[0];
-        dailyTotals[date] = (dailyTotals[date] || 0) + exp.amount;
-      });
-
-      // Convert to array format
-      const weeklyTotals = Object.entries(dailyTotals).map(
-        ([date, amount]) => ({
-          date,
-          amount,
-        })
-      );
-
-      setWeeklyExpenses(weeklyTotals);
-    } catch (error) {
-      console.error("Failed to fetch weekly expenses:", error);
-      toast.error("Failed to load weekly expenses");
-    }
-  };
-
-  const addExpense = async (
+  const handleAddExpense = async (
     amount: number,
     description: string,
     category: string
   ) => {
-    if (!user) return;
-
-    const { error } = await supabase.from("expenses").insert([
-      {
-        user_id: user.id,
+    try {
+      await addExpenseMutation.mutateAsync({
         amount,
         description,
         category_id: category,
-      },
-    ]);
-
-    if (error) {
+      });
+      toast.success("Expense added successfully");
+    } catch (error) {
+      console.error("Error adding expense:", error);
       toast.error("Failed to add expense");
-      throw error;
     }
-
-    toast.success("Expense added successfully");
-    await fetchExpenses();
   };
 
-  const dailyTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const remainingBudget = userSettings
-    ? userSettings.daily_limit - dailyTotal
-    : 0;
-
-  const getExpensesByCategory = () => {
-    const categoryTotals = expenses.reduce((acc, expense) => {
-      const categoryId = expense.category_id;
-      if (!categoryId) {
-        console.log("Found expense without category:", expense);
-        return acc;
-      }
-      acc[categoryId] = (acc[categoryId] || 0) + expense.amount;
-      return acc;
-    }, {} as { [key: string]: number });
-
-    return categoryTotals;
-  };
+  const getExpensesByCategory = () => categoryExpenses;
 
   const getHistoricalExpensesByCategory = async () => {
-    if (!user) return {};
-
-    try {
-      const { data, error } = await supabase
-        .from("expenses")
-        .select("amount, category_id")
-        .eq("user_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      const totals = data.reduce((acc: { [key: string]: number }, expense) => {
-        if (expense.category_id) {
-          acc[expense.category_id] =
-            (acc[expense.category_id] || 0) + expense.amount;
-        } else {
-          // Add to "Uncategorized" if no category
-          acc["uncategorized"] = (acc["uncategorized"] || 0) + expense.amount;
-        }
-        return acc;
-      }, {});
-
-      setHistoricalExpenses(totals);
-      return totals;
-    } catch (error) {
-      console.error("Failed to load historical expenses:", error);
-      toast.error("Failed to load historical expenses");
-      return {};
-    }
+    return historicalCategoryExpenses;
   };
 
-  useEffect(() => {
-    let mounted = true;
-
-    if (user && userSettings) {
-      (async () => {
-        try {
-          await fetchExpenses();
-          if (mounted) {
-            await fetchWeeklyExpenses();
-          }
-        } catch (error) {
-          console.error("Failed to fetch expenses:", error);
-          if (mounted) {
-            toast.error("Failed to load expenses");
-          }
-        }
-      })();
-    } else {
-      setExpenses([]);
-      setTotalSpent(0);
-      setWeeklyExpenses([]);
-    }
-
-    return () => {
-      mounted = false;
-    };
-  }, [user, userSettings]);
+  const loading = isDailyLoading || isMonthlyLoading || isRecentLoading;
 
   return (
     <ExpenseContext.Provider
       value={{
-        expenses,
-        monthlyExpenses,
-        allTimeExpenses,
+        expenses: dailyData.data,
+        monthlyExpenses: monthlyData.data,
+        recentExpenses: recentData.data,
         dailyTotal,
         remainingBudget,
-        addExpense,
-        getExpensesByCategory,
+        addExpense: handleAddExpense,
         loading,
-        totalSpent,
+        totalSpent: stats.totalSpent,
         weeklyExpenses,
+        getExpensesByCategory,
         getHistoricalExpensesByCategory,
-        historicalExpenses,
+        historicalExpenses: historicalCategoryExpenses,
       }}
     >
       {children}
@@ -276,7 +121,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useExpenses = () => {
   const context = useContext(ExpenseContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useExpenses must be used within an ExpenseProvider");
   }
   return context;

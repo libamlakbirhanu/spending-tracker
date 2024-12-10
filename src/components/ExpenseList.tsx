@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Expense } from "../types";
 import { useCategories } from "../contexts/CategoryContext";
+import { useExpenses } from "../contexts/ExpenseContext";
+import { ExpenseCardSkeleton } from "./skeletons/ExpenseCardSkeleton";
 import {
   FaShoppingCart,
   FaUtensils,
@@ -37,10 +38,6 @@ styleSheet.type = "text/css";
 styleSheet.innerText = styles;
 document.head.appendChild(styleSheet);
 
-interface ExpenseListProps {
-  expenses: Expense[];
-}
-
 const getCategoryIcon = (categoryName: string | undefined) => {
   if (!categoryName) return FaQuestion;
 
@@ -69,8 +66,19 @@ const getCategoryIcon = (categoryName: string | undefined) => {
   return FaQuestion;
 };
 
-const ExpenseList: React.FC<ExpenseListProps> = ({ expenses }) => {
+const ExpenseList: React.FC = () => {
+  const { expenses, loading } = useExpenses();
   const { categories } = useCategories();
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <ExpenseCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
 
   if (expenses.length === 0) {
     return (

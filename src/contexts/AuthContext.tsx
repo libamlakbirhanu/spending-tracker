@@ -110,10 +110,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   if (session?.user) {
                     console.log("Setting user and fetching settings...");
                     setUser(session.user);
-                    const settings = await fetchUserSettings(session.user.id);
-                    console.log("Fetched user settings:", settings);
-                    if (isMounted) {
-                      navigate("/");
+                    try {
+                      const settings = await fetchUserSettings(session.user.id);
+                      console.log("Fetched user settings:", settings);
+                      if (isMounted && settings) {
+                        setLoading(false);
+                        navigate("/");
+                      }
+                    } catch (error) {
+                      console.error("Error during sign in flow:", error);
+                      toast.error("Failed to load user data");
                     }
                   }
                   break;

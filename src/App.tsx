@@ -14,17 +14,31 @@ import { AuthLayout } from "./components/AuthLayout";
 import Goals from "./components/Goals";
 import { GoalsProvider } from "./contexts/GoalsContext";
 import GoalDetails from "./components/GoalDetails";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1
+    },
+  },
+});
 
 function App() {
   return (
-    <ExpenseProvider>
-      <CategoryProvider>
-        <InsightsProvider>
-          <AppContent />
-          <Toaster position="top-right" />
-        </InsightsProvider>
-      </CategoryProvider>
-    </ExpenseProvider>
+    <QueryClientProvider client={queryClient}>
+      <ExpenseProvider>
+        <CategoryProvider>
+          <InsightsProvider>
+            <AppContent />
+            <Toaster position="top-right" />
+          </InsightsProvider>
+        </CategoryProvider>
+      </ExpenseProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
 

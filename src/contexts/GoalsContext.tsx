@@ -47,9 +47,13 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Fetch goals from Supabase
   const fetchGoals = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
+      console.log('Fetching goals for user:', user.id);
       const { data, error } = await supabase
         .from("savings_goals")
         .select("*")
@@ -57,6 +61,7 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched goals:', data);
       setGoals(data || []);
     } catch (error) {
       console.error("Error fetching goals:", error);
@@ -65,6 +70,12 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
     }
   };
+
+  // Fetch goals when component mounts or user changes
+  useEffect(() => {
+    console.log('Goals useEffect triggered, user:', user?.id);
+    fetchGoals();
+  }, [user]);
 
   // Add new goal
   const addGoal = async (
@@ -289,13 +300,6 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
       return [];
     }
   };
-
-  // Initial fetch
-  useEffect(() => {
-    if (user) {
-      fetchGoals();
-    }
-  }, [user]);
 
   return (
     <GoalsContext.Provider

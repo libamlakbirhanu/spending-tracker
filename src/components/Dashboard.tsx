@@ -6,6 +6,7 @@ import ExpenseForm from "./ExpenseForm";
 import SpendingChart from "./SpendingChart";
 import WeeklySpendingChart from "./WeeklySpendingChart";
 import ExpenseList from "./ExpenseList";
+import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
 
 export const Dashboard: React.FC = () => {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -17,7 +18,12 @@ export const Dashboard: React.FC = () => {
     addExpense,
     getExpensesByCategory,
     weeklyExpenses,
+    loading: expensesLoading,
   } = useExpenses();
+
+  if (expensesLoading) {
+    return <DashboardSkeleton />;
+  }
 
   const handleAddExpense = async (
     amount: number,
@@ -27,14 +33,6 @@ export const Dashboard: React.FC = () => {
     await addExpense(amount, description, category);
     setShowExpenseForm(false);
   };
-  // Remove loading spinner since we handle loading at the route level
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-  //     </div>
-  //   );
-  // }
 
   const getProgressColor = (percentage: number) => {
     if (percentage >= 90) return "bg-red-500";
@@ -134,7 +132,7 @@ export const Dashboard: React.FC = () => {
                 No expenses recorded yet
               </div>
             ) : (
-              <ExpenseList expenses={expenses} />
+              <ExpenseList />
             )}
           </div>
         </div>

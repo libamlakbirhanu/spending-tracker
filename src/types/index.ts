@@ -19,13 +19,19 @@ export interface AuthContextType {
   logout: () => void;
 }
 
-export interface SpendingContextType {
+export interface ExpenseContextType {
   expenses: Expense[];
+  monthlyExpenses: Expense[];
+  recentExpenses: Expense[];
   dailyTotal: number;
   remainingBudget: number;
-  addExpense: (amount: number, description: string, category: string) => void;
-  resetDaily: () => void;
+  addExpense: (amount: number, description: string, category: string) => Promise<void>;
   getExpensesByCategory: () => { [key: string]: number };
+  loading: boolean;
+  totalSpent: number;
+  weeklyExpenses: { date: string; amount: number }[];
+  getHistoricalExpensesByCategory: () => Promise<{ [key: string]: number }>;
+  historicalExpenses: { [key: string]: number };
 }
 
 export const EXPENSE_CATEGORIES = [

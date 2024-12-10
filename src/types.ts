@@ -32,8 +32,8 @@ export interface Expense {
   id: string;
   amount: number;
   description: string;
-  category_id: string;
-  created_at: number;
+  category_id: string | null;
+  created_at: string;
 }
 
 export interface SpendingContextType {

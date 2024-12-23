@@ -22,6 +22,7 @@ interface ExpenseContextType {
     category: string
   ) => Promise<void>;
   loading: boolean;
+  isAddingExpense: boolean;
   totalSpent: number;
   weeklyExpenses: { date: string; amount: number }[];
   getExpensesByCategory: () => { [key: string]: number };
@@ -96,6 +97,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const loading = isDailyLoading || isMonthlyLoading || isRecentLoading;
+  const isAddingExpense = addExpenseMutation.isPending;
 
   return (
     <ExpenseContext.Provider
@@ -107,6 +109,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
         remainingBudget,
         addExpense: handleAddExpense,
         loading,
+        isAddingExpense,
         totalSpent: stats.totalSpent,
         weeklyExpenses,
         getExpensesByCategory,

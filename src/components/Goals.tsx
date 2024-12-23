@@ -25,6 +25,7 @@ const Goals: React.FC = () => {
     deleteGoal,
     getGoalProgress,
     loading,
+    isAddingGoal,
     addSavingsTransaction,
   } = useGoals();
   const navigate = useNavigate();
@@ -79,6 +80,7 @@ const Goals: React.FC = () => {
         isOpen={showNewGoalForm}
         onClose={() => setShowNewGoalForm(false)}
         onSubmit={handleSubmit}
+        isSubmitting={isAddingGoal}
       />
 
       {selectedGoal && (

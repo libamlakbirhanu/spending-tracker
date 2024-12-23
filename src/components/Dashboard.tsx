@@ -13,15 +13,16 @@ export const Dashboard: React.FC = () => {
   const { userSettings } = useAuth();
   const {
     expenses,
+    addExpense,
+    loading,
+    isAddingExpense,
     dailyTotal,
     remainingBudget,
-    addExpense,
     getExpensesByCategory,
     weeklyExpenses,
-    loading: expensesLoading,
   } = useExpenses();
 
-  if (expensesLoading) {
+  if (loading) {
     return <DashboardSkeleton />;
   }
 
@@ -175,6 +176,7 @@ export const Dashboard: React.FC = () => {
               <ExpenseForm
                 onSubmit={handleAddExpense}
                 onClose={() => setShowExpenseForm(false)}
+                isSubmitting={isAddingExpense}
               />
             </div>
           </div>

@@ -9,6 +9,7 @@ interface GoalsContextType {
   goals: SavingsGoal[];
   achievements: Achievement[];
   loading: boolean;
+  isAddingGoal: boolean;
   addGoal: (
     goal: Omit<
       SavingsGoal,
@@ -44,6 +45,7 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingGoal, setIsAddingGoal] = useState(false);
 
   // Fetch goals from Supabase
   const fetchGoals = async () => {
@@ -91,6 +93,7 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     if (!user) return;
 
+    setIsAddingGoal(true);
     try {
       const newGoal = {
         ...goalData,
@@ -109,11 +112,13 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (error) throw error;
 
-      setGoals((prev) => [data, ...prev]);
-      toast.success("Savings goal created!");
+      setGoals([data, ...goals]);
+      toast.success("Savings goal added successfully");
     } catch (error) {
       console.error("Error adding goal:", error);
-      toast.error("Failed to create savings goal");
+      toast.error("Failed to add savings goal");
+    } finally {
+      setIsAddingGoal(false);
     }
   };
 
@@ -307,6 +312,7 @@ export const GoalsProvider: React.FC<{ children: React.ReactNode }> = ({
         goals,
         achievements,
         loading,
+        isAddingGoal,
         addGoal,
         updateGoal,
         deleteGoal,
